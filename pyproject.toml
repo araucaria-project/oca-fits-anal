@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "oca-fits-anal"
+version = "0.1.0"
+description = ""
+authors = ["majkelx <mkalusz@camk.edu.pl>"]
+#readme = "README.md"
+packages = [{include = "*.py"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+astropy = "^7.0.1"
+tqdm = "^4.67.1"
+
+[tool.poetry.scripts]
+shutter-mapper = "shutter_mapper:main"
+fits-median = "fits_median:main"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
