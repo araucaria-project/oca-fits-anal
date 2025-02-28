@@ -275,7 +275,7 @@ def main():
                 log.error(f"Error processing {subdir}: {e}")
             except Exception as e:
                 log.error(f"Error processing directory {subdir}: {e}")
-                raise e
+                # raise e
 
 
 if __name__ == "__main__":
