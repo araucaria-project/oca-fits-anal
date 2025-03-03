@@ -99,6 +99,56 @@ def calculate_median_chunked(filenames, output_filename, chunk_size=10, overwrit
 
     print(f"Median calculation complete. Result saved to: {output_filename}")
 
+def calculate_mean(filenames, output_filename, overwrite=False):
+    """
+    Calculate mean of FITS files.
+
+    Args:
+        filenames (list): List of input FITS filenames
+        output_filename (str): Filename for the output mean FITS
+        overwrite (bool): Whether to overwrite existing output file
+    """
+    if not filenames:
+        print("Error: No input files provided")
+        return
+
+    # Check if all files exist
+    for filename in filenames:
+        if not os.path.exists(filename):
+            print(f"Error: File {filename} not found")
+            return
+
+    # Get info from first file to determine dimensions and type
+    print(f"Reading information from {len(filenames)} FITS files...")
+    header, shape, dtype = get_fits_info(filenames[0])
+
+    # Create output file
+    if os.path.exists(output_filename) and not overwrite:
+        print(f"Error: Output file {output_filename} already exists. Use --overwrite to replace it.")
+        return
+
+    # Create empty output file with same dimensions
+    print(f"Creating output file: {output_filename}")
+    output_hdu = fits.PrimaryHDU(np.zeros(shape, dtype=dtype))
+    output_hdu.header = header.copy()
+    output_hdu.header['HISTORY'] = f'Mean of {len(filenames)} FITS files'
+    for i, filename in enumerate(filenames):
+        output_hdu.header['HISTORY'] = f'Input {i+1}: {os.path.basename(filename)}'
+
+    output_hdu.writeto(output_filename, overwrite=True)
+
+    # Open output file for updating
+    with fits.open(output_filename, mode='update') as output_hdul:
+        # Process each file
+        for filename in tqdm(filenames):
+            with fits.open(filename, memmap=True) as hdul:
+                # Add data to output
+                output_hdul[0].data += hdul[0].data
+
+        # Calculate mean
+        output_hdul[0].data /= len(filenames)
+
+    print(f"Mean calculation complete. Result saved to: {output_filename}")
 
 def main():
     parser = argparse.ArgumentParser(description='Calculate median of multiple FITS files.')
@@ -108,12 +158,20 @@ def main():
                         help='Number of rows to process at once (default: 10)')
     parser.add_argument('--overwrite', action='store_true',
                         help='Overwrite output file if it exists')
+    parser.add_argument('-m', '--mean', action='store_true',
+                        help='Calculate mean instead of median')
 
     args = parser.parse_args()
 
-    calculate_median_chunked(args.inputs, args.output,
-                             chunk_size=args.chunk_size,
-                             overwrite=args.overwrite)
+    if args.mean:
+        print("Calculating mean")
+        calculate_mean(args.inputs, args.output,
+                       overwrite=args.overwrite)
+    else:
+        calculate_median_chunked(args.inputs, args.output,
+                                 chunk_size=args.chunk_size,
+                                 overwrite=args.overwrite)
+
 
 
 if __name__ == '__main__':
